@@ -1,6 +1,6 @@
 import { Response } from "../common/types/interface";
 
-const baseUrl = process.env.REACT_APP_SERVER_URL;
+const baseUrl = String(process.env.REACT_APP_SERVER_URL);
 
 const post = async <T extends Response, U>(endpoint: string, data: U) => {
   const url = baseUrl + endpoint;
