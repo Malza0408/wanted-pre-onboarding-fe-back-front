@@ -1,8 +1,9 @@
 import React, { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { post } from "../../api/api";
 import { Response } from "../../common/types/interface";
 import { checkEmail, checkPassword } from "../../common/utils/checkValid";
+import { ROUTE } from "../../common/utils/constant";
 import { Container } from "./AuthForm.style";
 
 interface AuthFormProp {
@@ -20,6 +21,7 @@ interface AuthValues {
 }
 
 function AuthForm({ isLoginPage, handleSetIsLoginPage }: AuthFormProp) {
+  const navigate = useNavigate();
   const [formValues, setFormValues] = useState<AuthValues>({
     email: "",
     password: "",
@@ -36,6 +38,12 @@ function AuthForm({ isLoginPage, handleSetIsLoginPage }: AuthFormProp) {
   const postForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoginPage) {
+      const token = await post<TokenValue, AuthValues>(
+        "/auth/signin",
+        formValues
+      );
+      localStorage.setItem("token", token.access_token);
+      redirectToTodoPage();
     } else {
       await post<TokenValue, AuthValues>("/auth/signup", formValues);
       changeRegisterToLogin();
@@ -51,6 +59,10 @@ function AuthForm({ isLoginPage, handleSetIsLoginPage }: AuthFormProp) {
       };
     });
     handleSetIsLoginPage(true);
+  };
+
+  const redirectToTodoPage = () => {
+    navigate(ROUTE.TODO);
   };
 
   return (
