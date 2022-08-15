@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Container, Form, SwitchButton, Title } from "./index.style";
 import AuthForm from "../../components/Auth/AuthForm";
+import { useNavigate } from "react-router-dom";
+import { ROUTE } from "../../common/utils/constant";
 
 function Main() {
+  const navigate = useNavigate();
   const [isLoginPage, setIsLoginPage] = useState(true);
 
   const handleSetIsLoginPage = (isLogin: boolean) => {
@@ -11,6 +14,7 @@ function Main() {
 
   useEffect(() => {
     if (localStorage.getItem("token")) {
+      navigate(ROUTE.TODO);
     }
   }, []);
 
