@@ -1,12 +1,16 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { post } from "../../api/api";
+import { Response } from "../../common/types/interface";
+import { checkEmail, checkPassword } from "../../common/utils/checkValid";
 import { Container } from "./AuthForm.style";
 
 interface AuthFormProp {
   isLoginPage: boolean;
+  handleSetIsLoginPage: (isLogin: boolean) => void;
 }
 
-interface TokenValue {
+interface TokenValue extends Response {
   access_token: string;
 }
 
@@ -15,19 +19,10 @@ interface AuthValues {
   password: string;
 }
 
-interface AuthValidValues {
-  emailValid: boolean;
-  passwordValid: boolean;
-}
-
-function AuthForm({ isLoginPage }: AuthFormProp) {
+function AuthForm({ isLoginPage, handleSetIsLoginPage }: AuthFormProp) {
   const [formValues, setFormValues] = useState<AuthValues>({
     email: "",
     password: "",
-  });
-  const [isValid, setIsValid] = useState<AuthValidValues>({
-    emailValid: false,
-    passwordValid: false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,20 +33,37 @@ function AuthForm({ isLoginPage }: AuthFormProp) {
     });
   };
 
-  const postForm = (e: React.FormEvent) => {
+  const postForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoginPage) {
-      return;
     } else {
-      const result = post<TokenValue>("/auth/signup");
+      await post<TokenValue, AuthValues>("/auth/signup", formValues);
+      changeRegisterToLogin();
     }
   };
+
+  const changeRegisterToLogin = () => {
+    alert("회원가입에 성공했습니다! 로그인 페이지로 이동합니다.");
+    setFormValues((cur) => {
+      return {
+        ...cur,
+        password: "",
+      };
+    });
+    handleSetIsLoginPage(true);
+  };
+
   return (
     <form onSubmit={postForm}>
       <Container>
         <label>
           이메일
-          <input type="email" name="email" onChange={handleChange} />
+          <input
+            type="email"
+            name="email"
+            value={formValues.email}
+            onChange={handleChange}
+          />
         </label>
       </Container>
       <Container>
@@ -60,12 +72,23 @@ function AuthForm({ isLoginPage }: AuthFormProp) {
           <input
             type="password"
             name="password"
+            value={formValues.password}
             autoComplete="true"
             onChange={handleChange}
           />
         </label>
       </Container>
-      <input type="submit" value="Submit" />
+      {
+        <input
+          type="submit"
+          value="Submit"
+          disabled={
+            !(
+              checkEmail(formValues.email) && checkPassword(formValues.password)
+            )
+          }
+        />
+      }
     </form>
   );
 }
