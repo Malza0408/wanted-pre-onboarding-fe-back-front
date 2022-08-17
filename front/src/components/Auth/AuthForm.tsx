@@ -42,6 +42,8 @@ function AuthForm({ isLoginPage, handleSetIsLoginPage }: AuthFormProp) {
         "/auth/signin",
         formValues
       );
+      console.log("token", token);
+
       localStorage.setItem("token", token.access_token);
       redirectToTodoPage();
     } else {
