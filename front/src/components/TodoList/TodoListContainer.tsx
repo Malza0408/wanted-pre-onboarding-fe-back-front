@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { get, post } from "../../api/api";
+import * as api from "../../api/api";
 import { Response } from "../../common/types/interface";
 import { API_URL } from "../../common/utils/constant";
 import List from "./List";
@@ -22,34 +22,100 @@ interface PostTodoValue {
   todo: string;
 }
 
+interface UpdateTodoValues {
+  todo: string;
+  isCompleted: boolean;
+}
+
 type PostTodoType = TodoValues & Response;
 type GetTodosType = TodoValues[] & Response;
 
 function TodoListContainer() {
   const navigate = useNavigate();
   const [todoList, setTodoList] = useState<TodoValues[]>([]);
-  const [addTodo, setAddTodo] = useState("");
+  const [addTodoInputValue, setAddTodoInputValue] = useState("");
 
   const postTodoList = () => {
-    const postTodo: PostTodoValue = {
-      todo: addTodo,
-    };
-    return post<PostTodoType, PostTodoValue>(API_URL.TODO, postTodo);
+    return api.post<PostTodoType, PostTodoValue>(API_URL.TODO, {
+      todo: addTodoInputValue,
+    });
   };
 
-  const getTodoList = () => {
-    return get<GetTodosType>(API_URL.TODO);
-  };
-
-  const PostAndGetTodoList = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await postTodoList();
-    const result = await getTodoList();
+  const getTodoList = async () => {
+    const result = await api.get<GetTodosType>(API_URL.TODO);
     setTodoList(result);
   };
 
+  const postAndGetTodoList = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await postTodoList();
+    await getTodoList();
+    clearTodoInput();
+  };
+
+  const updateTodoList = async (
+    todo: string,
+    id: number,
+    isCompleted: boolean
+  ) => {
+    await api.put<PostTodoType, UpdateTodoValues>(`${API_URL.TODO}/${id}`, {
+      todo,
+      isCompleted,
+    });
+  };
+
+  const deleteTodoList = (id: number) => {
+    return api.delete(`${API_URL.TODO}/${id}`);
+  };
+
+  const handleDeleteTodo = async (id: number) => {
+    await deleteTodoList(id);
+    await getTodoList();
+  };
+
+  const handleUpdateTodo = async (
+    todo: string,
+    id: number,
+    isCompleted: boolean
+  ) => {
+    await updateTodoList(todo, id, isCompleted);
+    handleChangeUpdateTodo(todo, id);
+  };
+
+  const clearTodoInput = () => {
+    setAddTodoInputValue("");
+  };
   const handleChangeAddTodo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddTodo(e.target.value);
+    setAddTodoInputValue(e.target.value);
+  };
+
+  const handleIsCompleteTodo = (id: number) => {
+    setTodoList((cur) => {
+      return cur.map((todo) => {
+        if (todo.id === id) {
+          return {
+            ...todo,
+            isCompleted: !todo.isCompleted,
+          };
+        } else {
+          return todo;
+        }
+      });
+    });
+  };
+  const handleChangeUpdateTodo = (todo: string, id: number) => {
+    setTodoList((cur) => {
+      return cur.map((curTodo) => {
+        if (curTodo.id === id) {
+          return {
+            ...curTodo,
+            todo,
+          };
+        } else {
+          return curTodo;
+        }
+      });
+    });
   };
 
   useEffect(() => {
@@ -57,8 +123,7 @@ function TodoListContainer() {
       navigate("/");
     }
     const getTodos = async () => {
-      const result = await getTodoList();
-      setTodoList(result);
+      await getTodoList();
     };
     getTodos();
   }, []);
@@ -68,13 +133,13 @@ function TodoListContainer() {
       <Title>Today Todo List</Title>
       <InnerContainer>
         <PostForm>
-          <form onSubmit={PostAndGetTodoList}>
+          <form onSubmit={postAndGetTodoList}>
             <label>
               Add Todo List
               <input
                 type="text"
                 name="todoList"
-                value={addTodo}
+                value={addTodoInputValue}
                 onChange={handleChangeAddTodo}
               />
             </label>
@@ -84,22 +149,18 @@ function TodoListContainer() {
         {todoList && (
           <ul>
             {todoList?.map((todo, index) => (
-              <List todo={todo.todo} key={`key-${index}`} />
+              <List
+                {...todo}
+                key={`key-${index}`}
+                handleIsCompleteTodo={handleIsCompleteTodo}
+                handleDeleteTodo={handleDeleteTodo}
+                handleUpdateTodo={handleUpdateTodo}
+              />
             ))}
           </ul>
         )}
       </InnerContainer>
     </OuterContainer>
-
-    // const submitLoginForm = () => {
-    //     // ...
-    // }
-
-    //     <form>
-    //         <input type="text" />
-    //         <input type="password" />
-    //         <button type="submit" className={isFormValid ? "button" : "button invalid"} onClick={isFormValid ? submitLoginForm : undefined}/>
-    //     </form>
   );
 }
 
